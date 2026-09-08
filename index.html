@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>도장·서명 메이커</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Song+Myung&family=Gowun+Batang:wght@700&family=Hahmlet:wght@900&family=Nanum+Myeongjo:wght@800&family=Noto+Serif+KR:wght@900&family=Noto+Sans+KR:wght@400;500;700;900&family=Black+Han+Sans&family=Do+Hyeon&family=Gugi&family=East+Sea+Dokdo&family=Nanum+Brush+Script&family=Yeon+Sung&family=Stylish&family=Shippori+Mincho+B1:wght@800&family=Zen+Antique&family=Yuji+Boku&family=Hina+Mincho&family=Nanum+Pen+Script&family=Gaegu:wght@700&family=Hi+Melody&family=Great+Vibes&family=Sacramento&family=Pacifico&family=Allura&family=Mr+Dafoe&family=Homemade+Apple&family=Parisienne&family=Caveat:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#F6F3EC;--card:#FFFFFF;--ink:#1C1A17;--muted:#7A736A;--line:#E4DED3;--red:#B5121B;--red-soft:#FCEBEC;--gold:#B8935A}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Noto Sans KR",system-ui,sans-serif;background:var(--paper);color:var(--ink);font-size:14.5px;
+    background-image:radial-gradient(#e9e3d7 .8px,transparent .8px);background-size:22px 22px}
+  header{display:flex;align-items:center;justify-content:space-between;padding:20px 32px;max-width:1200px;margin:0 auto}
+  .logo{display:flex;align-items:center;gap:12px;font-weight:700;font-size:20px;letter-spacing:-.4px}
+  .logo .seal{width:38px;height:38px;border:3px solid var(--red);color:var(--red);font-family:"Song Myung",serif;font-size:18px;display:grid;place-items:center;transform:rotate(-7deg);background:#fff}
+  .logo small{display:block;font-size:11px;font-weight:400;color:var(--muted);letter-spacing:.5px}
+  .badge{font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:6px 14px;background:#fff}
+  .badge b{color:#15803D}
+  .tabs{display:inline-flex;gap:4px;padding:4px;background:#EAE4D8;border-radius:12px;margin:0 32px 14px}
+  .tabwrap{max-width:1200px;margin:0 auto}
+  .tab{border:0;background:transparent;padding:9px 26px;border-radius:9px;cursor:pointer;font:inherit;font-weight:500;color:var(--muted);font-size:15px}
+  .tab.on{background:#fff;color:var(--ink);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  main{max-width:1200px;margin:0 auto;padding:0 32px 40px}
+  .panel{display:none;gap:24px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:26px;box-shadow:0 10px 40px -20px rgba(60,40,10,.25)}
+  .panel.on{display:grid;grid-template-columns:360px 1fr}
+  .opts{display:flex;flex-direction:column;gap:16px}
+  .field label,.field .lbl{display:block;font-size:11.5px;color:var(--muted);margin-bottom:7px;font-weight:600;letter-spacing:.6px;text-transform:uppercase}
+  input[type=text]{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;font:inherit;font-size:18px;background:#fff;letter-spacing:1px}
+  input[type=text]:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 3px var(--red-soft)}
+  .seg{display:flex;border:1.5px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+  .seg button{flex:1;padding:10px 0;border:0;background:#fff;font:inherit;cursor:pointer;color:var(--muted);font-weight:500}
+  .seg button.on{background:var(--ink);color:#fff;font-weight:700}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .swatches{display:flex;gap:12px;align-items:center}
+  .sw{width:34px;height:34px;border-radius:50%;cursor:pointer;position:relative;transition:.15s}
+  .sw.on{outline:2.5px solid var(--ink);outline-offset:3px}
+  .sw span{position:absolute;top:40px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--muted);white-space:nowrap}
+  .swatches{padding-bottom:16px}
+  input[type=range]{width:100%;accent-color:var(--red)}
+  .val{float:right;color:var(--ink);font-variant-numeric:tabular-nums;text-transform:none}
+  .sub{border-top:1px solid var(--line);padding-top:16px}
+  .shade{background:#FCFBF8;border:1.5px solid var(--line);border-radius:10px;padding:10px 12px}
+  .swatches{position:relative}
+  .sw:active{transform:scale(.92)}
+  .toggle{display:flex;align-items:center;justify-content:space-between;font-size:13.5px}
+  .toggle input{accent-color:var(--red);width:18px;height:18px}
+  .fonts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:330px;overflow:auto;padding:2px}
+  .fcard{border:1.5px solid var(--line);border-radius:10px;padding:8px 6px 5px;cursor:pointer;background:#fff;text-align:center;transition:.15s}
+  .fcard:hover{border-color:#c9c2b4}
+  .fcard.on{border-color:var(--red);background:var(--red-soft);box-shadow:0 0 0 2px var(--red-soft)}
+  .fcard canvas{width:100%;aspect-ratio:1;display:block}
+  .fcard span{font-size:10.5px;color:var(--muted);display:block;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .preview{display:flex;flex-direction:column;gap:14px;min-width:0}
+  .board{position:relative;border-radius:14px;display:grid;place-items:center;padding:28px;min-height:460px;border:1px solid var(--line);
+    background-color:#fff;background-image:linear-gradient(45deg,#f0ede6 25%,transparent 25%),linear-gradient(-45deg,#f0ede6 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#f0ede6 75%),linear-gradient(-45deg,transparent 75%,#f0ede6 75%);background-size:22px 22px;background-position:0 0,0 11px,11px -11px,-11px 0}
+  .board canvas{max-width:100%;max-height:440px;height:auto;filter:drop-shadow(0 3px 8px rgba(0,0,0,.10))}
+  .board .hint{position:absolute;bottom:10px;right:14px;font-size:11px;color:var(--muted);background:rgba(255,255,255,.9);padding:3px 9px;border-radius:6px}
+  .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .btn{padding:12px 22px;border-radius:10px;border:1.5px solid var(--line);background:#fff;font:inherit;font-weight:600;cursor:pointer}
+  .btn.primary{background:var(--red);color:#fff;border-color:var(--red);box-shadow:0 4px 14px -4px rgba(181,18,27,.5)}
+  .btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
+  .btn.sm{padding:9px 14px;font-size:13px;font-weight:500}
+  select.btn{appearance:auto}
+  .gallery{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+  .card{border:1.5px solid var(--line);border-radius:10px;padding:8px 10px 6px;cursor:pointer;background:#fff;text-align:center}
+  .card.on{border-color:var(--red);background:var(--red-soft)}
+  .card canvas{width:100%;height:56px;display:block}
+  .card span{font-size:11px;color:var(--muted)}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;font-size:13px;opacity:0;transition:.25s;pointer-events:none}
+  .toast.show{opacity:1;transform:translateX(-50%)}
+  footer{max-width:1200px;margin:0 auto;padding:0 32px 40px;color:var(--muted);font-size:12px;line-height:1.9}
+  @media (max-width:860px){
+    .panel.on{grid-template-columns:1fr}.preview{order:-1}
+    header,main,footer{padding-left:14px;padding-right:14px}.tabs{margin-left:14px}
+    .board{min-height:320px}.fonts{grid-template-columns:repeat(3,1fr)}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><span class="seal">印</span><div>도장·서명 메이커<small>전자도장 · 전자서명 · 투명 PNG</small></div></div>
+  <div class="badge"><b>●</b> 이름은 서버로 전송되지 않습니다</div>
+</header>
+
+<div class="tabwrap"><div class="tabs">
+  <button class="tab on" data-tab="stamp">전자도장</button>
+  <button class="tab" data-tab="sig">전자서명</button>
+</div></div>
+
+<main>
+<!-- ================= STAMP ================= -->
+<section class="panel on" id="panel-stamp">
+  <div class="opts">
+    <div class="row">
+      <div class="field"><span class="lbl">문자</span>
+        <div class="seg" id="s-lang"><button data-v="ko" class="on">한글</button><button data-v="hanja">한자</button></div></div>
+      <div class="field"><span class="lbl">모양</span>
+        <div class="seg" id="s-shape"><button data-v="square" class="on">사각도장</button><button data-v="oval">원형도장</button></div></div>
+    </div>
+    <div class="field"><label for="s-name">이름</label><input type="text" id="s-name" placeholder="강한성" maxlength="6" autocomplete="off"></div>
+    <label class="toggle" id="s-suffix-row"><span>이름 뒤에 <b id="s-suffix-char">인</b> 자동 추가 (사각도장)</span><input type="checkbox" id="s-suffix" checked></label>
+    <div class="field"><span class="lbl">색상</span>
+      <div class="swatches" id="s-colors">
+        <div class="sw on" data-c="#B5121B" style="background:#B5121B"><span>빨강</span></div>
+        <div class="sw" data-c="#1A3E9E" style="background:#1A3E9E"><span>파랑</span></div>
+        <div class="sw" data-c="#141414" style="background:#141414"><span>검정</span></div>
+        <span style="font-size:11px;color:var(--muted);margin-left:auto">더블클릭 → 진하기</span>
+      </div>
+      <div class="shade" id="s-shade-box" hidden><label>색 진하기 <span class="val" id="s-shade-v">100%</span></label><input type="range" id="s-shade" min="40" max="140" value="100"></div></div>
+    <div class="field"><span class="lbl">글꼴 — 샘플을 보고 선택</span><div class="fonts" id="s-fonts"></div></div>
+    <div class="opts sub">
+        <div class="field"><label>테두리 두께 <span class="val" id="s-border-v">10</span></label><input type="range" id="s-border" min="4" max="22" value="10"></div>
+        <div class="field"><label>글자 굵기 <span class="val" id="s-weight-v">6</span></label><input type="range" id="s-weight" min="0" max="22" value="6"></div>
+        <div class="field"><label>글자 채움 <span class="val" id="s-fill-v">92%</span></label><input type="range" id="s-fill" min="70" max="100" value="92"></div>
+        <div class="field"><label>회전 <span class="val" id="s-rot-v">0°</span></label><input type="range" id="s-rot" min="-15" max="15" value="0"></div>
+        <label class="toggle"><span>흰색 배경 (다운로드)</span><input type="checkbox" id="s-bg"></label>
+        <label class="toggle"><span>클립보드는 흰 배경으로 복사 <small style="color:var(--muted)">한글·워드용</small></span><input type="checkbox" id="s-clipwhite" checked></label>
+    </div>
+  </div>
+  <div class="preview">
+    <div class="board"><canvas id="s-canvas" width="600" height="600"></canvas><span class="hint">체커보드 = 투명 영역</span></div>
+    <div class="actions">
+      <button class="btn primary" id="s-dl" disabled>PNG 다운로드</button>
+      <select id="s-size" class="btn sm" style="width:auto" title="문서에 붙였을 때 실제 크기"><option value="1.2">1.2 cm</option><option value="1.5" selected>1.5 cm</option><option value="2">2 cm</option><option value="2.5">2.5 cm</option><option value="3">3 cm</option></select>
+      <button class="btn sm" id="s-copy" disabled>클립보드 복사</button>
+      <button class="btn sm" id="s-reset">초기화</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SIGNATURE ================= -->
+<section class="panel" id="panel-sig">
+  <div class="opts">
+    <div class="field"><span class="lbl">만들기 방식</span>
+      <div class="seg" id="g-mode"><button data-v="auto" class="on">스타일 자동 생성</button><button data-v="draw">직접 그리기</button></div></div>
+    <div class="field g-auto"><label for="g-name">이름 (한글·영문)</label><input type="text" id="g-name" placeholder="Hong Gildong" maxlength="24" autocomplete="off"></div>
+    <div class="field g-auto"><span class="lbl">서명 스타일</span><div class="gallery" id="g-gallery"></div></div>
+    <div class="field g-draw" style="display:none"><span class="lbl">직접 그리기</span>
+      <div style="font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:10px">오른쪽 캔버스에 마우스·터치펜·손가락으로 서명하세요. 획마다 속도에 따라 굵기가 자연스럽게 변합니다.</div>
+      <div class="field"><label>펜 굵기 <span class="val" id="d-width-v">4</span></label><input type="range" id="d-width" min="1" max="14" value="4"></div>
+      <div class="actions" style="margin-top:4px"><button class="btn sm" id="d-undo">↩ 한 획 되돌리기</button><button class="btn sm" id="d-clear">전체 지우기</button></div>
+    </div>
+    <div class="field"><span class="lbl">색상</span>
+      <div class="swatches" id="g-colors">
+        <div class="sw on" data-c="#141414" style="background:#141414"><span>검정</span></div>
+        <div class="sw" data-c="#1A3E9E" style="background:#1A3E9E"><span>파랑</span></div>
+        <div class="sw" data-c="#B5121B" style="background:#B5121B"><span>빨강</span></div>
+        <span style="font-size:11px;color:var(--muted);margin-left:auto">더블클릭 → 진하기</span>
+      </div>
+      <div class="shade" id="g-shade-box" hidden><label>색 진하기 <span class="val" id="g-shade-v">100%</span></label><input type="range" id="g-shade" min="40" max="140" value="100"></div></div>
+    <div class="opts sub">
+        <div class="field g-auto"><label>굵기 <span class="val" id="g-weight-v">5</span></label><input type="range" id="g-weight" min="0" max="22" value="5" step="1"></div>
+        <div class="field g-auto"><label>기울기 <span class="val" id="g-tilt-v">-8°</span></label><input type="range" id="g-tilt" min="-20" max="20" value="-8"></div>
+        <div class="field g-auto"><label>크기 <span class="val" id="g-scale-v">100%</span></label><input type="range" id="g-scale" min="60" max="130" value="100"></div>
+        <label class="toggle g-auto"><span>밑줄</span><input type="checkbox" id="g-under" checked></label>
+        <label class="toggle g-auto"><span>끝 획 장식</span><input type="checkbox" id="g-flour" checked></label>
+        <label class="toggle"><span>흰색 배경 (다운로드)</span><input type="checkbox" id="g-bg"></label>
+        <label class="toggle"><span>클립보드는 흰 배경으로 복사 <small style="color:var(--muted)">한글·워드용</small></span><input type="checkbox" id="g-clipwhite" checked></label>
+    </div>
+  </div>
+  <div class="preview">
+    <div class="board"><canvas id="g-canvas" width="800" height="300"></canvas><canvas id="d-canvas" width="800" height="300" style="display:none;touch-action:none;cursor:crosshair"></canvas><span class="hint">체커보드 = 투명 영역</span></div>
+    <div class="actions">
+      <button class="btn primary" id="g-dl" disabled>PNG 다운로드</button>
+      <select id="g-size" class="btn sm" style="width:auto" title="문서에 붙였을 때 실제 가로 길이"><option value="3">3 cm</option><option value="4" selected>4 cm</option><option value="5">5 cm</option><option value="6">6 cm</option></select>
+      <button class="btn sm" id="g-copy" disabled>클립보드 복사</button>
+      <button class="btn sm" id="g-reset">초기화</button>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  ① 이름을 입력하고 ② 모양·색상·글꼴을 고른 뒤 ③ PNG 다운로드를 누르세요. 투명 배경이라 문서·PDF 어디에나 바로 얹을 수 있습니다.<br>
+  사각도장은 한글이면 이름을 왼쪽→오른쪽으로 읽는 순서로 놓고 "인"을 맨 아래 오른쪽에, 한자는 전통 인감 순서(오른쪽 열부터)로 배치합니다. 원형도장은 이름만 세로로 배치합니다.
+</footer>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------- utils ---------- */
+const $=s=>document.querySelector(s);
+const hasKo=s=>/[\u3131-\uD79D]/.test(s);
+function seedRand(str){let h=2166136261;for(const c of str){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}return()=>{h+=0x6D2B79F5;let t=h;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}}
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)}
+function trim(c){const ctx=c.getContext('2d'),w=c.width,h=c.height,d=ctx.getImageData(0,0,w,h).data;let t=h,b=0,l=w,r=0;for(let y=0;y<h;y++)for(let x=0;x<w;x++){if(d[(y*w+x)*4+3]>0){if(y<t)t=y;if(y>b)b=y;if(x<l)l=x;if(x>r)r=x}}if(r<l)return c;const p=Math.round(Math.min(w,h)*0.03);const o=document.createElement('canvas');o.width=r-l+1+p*2;o.height=b-t+1+p*2;o.getContext('2d').drawImage(c,l-p,t-p,r-l+1+p*2,b-t+1+p*2,0,0,o.width,o.height);return o}
+const DPI=600;const cmToPx=cm=>Math.round(cm/2.54*DPI);
+/* PNG에 pHYs(해상도) 청크를 넣어 한글·워드에 붙였을 때 실제 cm 크기로 들어가게 함 */
+const CRC_T=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c}return t})();
+function crc32(u8){let c=0xFFFFFFFF;for(const b of u8)c=CRC_T[(c^b)&255]^(c>>>8);return(c^0xFFFFFFFF)>>>0}
+async function pngWithDpi(canvas,dpi){const blob=await new Promise(r=>canvas.toBlob(r,'image/png'));const src=new Uint8Array(await blob.arrayBuffer());
+  const ppm=Math.round(dpi/0.0254);const chunk=new Uint8Array(21);const dv=new DataView(chunk.buffer);
+  dv.setUint32(0,9);chunk.set([0x70,0x48,0x59,0x73],4);dv.setUint32(8,ppm);dv.setUint32(12,ppm);chunk[16]=1;dv.setUint32(17,crc32(chunk.subarray(4,17)));
+  const out=new Uint8Array(src.length+21);out.set(src.subarray(0,33));out.set(chunk,33);out.set(src.subarray(33),54);return new Blob([out],{type:'image/png'})}
+async function download(canvas,name){const blob=await pngWithDpi(canvas,DPI);const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('저장되었습니다')}
+async function copyPng(canvas){try{const blob=await pngWithDpi(canvas,DPI);await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);toast('복사되었습니다 — 문서에 붙여넣기 하세요')}catch(e){toast('이 브라우저에서는 복사를 지원하지 않습니다')}}
+function seg(el,cb){el.querySelectorAll('button').forEach(b=>b.onclick=()=>{el.querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');cb(b.dataset.v)})}
+function shadeColor(hex,v){let r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  if(v<100){const t=(100-v)/60*0.75;r+=(255-r)*t;g+=(255-g)*t;b+=(255-b)*t}else if(v>100){const t=(v-100)/40*0.6;r*=1-t;g*=1-t;b*=1-t}
+  return '#'+[r,g,b].map(x=>Math.round(Math.max(0,Math.min(255,x))).toString(16).padStart(2,'0')).join('')}
+function swatch(el,prefix,cb){let base=el.querySelector('.sw.on').dataset.c;const box=$('#'+prefix+'-shade-box'),sl=$('#'+prefix+'-shade');
+  const apply=()=>{$('#'+prefix+'-shade-v').textContent=sl.value+'%';cb(shadeColor(base,+sl.value))};
+  el.querySelectorAll('.sw').forEach(s=>{s.onclick=()=>{el.querySelectorAll('.sw').forEach(x=>x.classList.remove('on'));s.classList.add('on');base=s.dataset.c;apply()};
+    s.ondblclick=()=>{box.hidden=!box.hidden}});
+  sl.oninput=apply}
+
+/* ---------- tabs ---------- */
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));t.classList.add('on');document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));$('#panel-'+t.dataset.tab).classList.add('on');if(t.dataset.tab==='sig')drawGallery()});
+
+/* =============== STAMP =============== */
+const KO_FONTS=[
+  ['Song Myung','전통 인감'],['Noto Serif KR','묵직한 명조'],['Hahmlet','굵은 세리프'],['Gowun Batang','단정한 바탕'],
+  ['Nanum Myeongjo','명조'],['Stylish','궁서풍'],['Black Han Sans','현대 고딕'],['Do Hyeon','각진 고딕'],['Noto Sans KR','고딕 900'],
+  ['Gugi','붓글씨'],['East Sea Dokdo','거친 붓'],['Nanum Brush Script','부드러운 붓'],['Yeon Sung','손글씨 명조']];
+const HJ_FONTS=[
+  ['Noto Serif KR','명조 (전각체 대용)'],['Shippori Mincho B1','고전 명조'],['Zen Antique','고풍 해서'],['Hina Mincho','가는 명조'],
+  ['Yuji Boku','붓 해서'],['Noto Sans KR','고딕 900'],['Song Myung','명조 인감'],['Hahmlet','굵은 세리프']];
+const S={name:'',lang:'ko',shape:'square',font:'Song Myung',suffix:true,color:'#B5121B',border:10,weight:6,fill:92,rot:0,bg:false};
+
+function stampText(o){
+  const raw=(o.name||(o.lang==='ko'?'강한성':'姜漢成')).replace(/[^\p{L}\p{N}]/gu,'');
+  const suf=o.lang==='ko'?'인':'印';
+  return o.shape==='square'&&o.suffix?raw+suf:raw;
+}
+function drawStamp(ctx,size,o,thumb){
+  const text=stampText(o);const chars=[...text];const n=chars.length;
+  const placeholder=!o.name&&!thumb;
+  const u=size/600;
+  ctx.clearRect(0,0,size,size);
+  if(o.bg&&!thumb){ctx.fillStyle='#fff';ctx.fillRect(0,0,size,size)}
+  ctx.save();ctx.translate(size/2,size/2);ctx.rotate(o.rot*Math.PI/180);
+  const color=placeholder?'#c4c0b8':o.color;
+  ctx.fillStyle=color;ctx.strokeStyle=color;ctx.lineJoin='miter';ctx.lineCap='butt';
+  const bw=o.border*u;
+  const fontOf=px=>`900 ${px}px "${o.font}", "Noto Serif KR", serif`;
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  // draw a char to fill a cell (cw x ch) as tightly as possible
+  const putCell=(ch,cx,cy,cw,chh)=>{
+    const f=o.fill/100;let px=chh*f;ctx.font=fontOf(px);
+    const m=ctx.measureText(ch);const gw=m.width;
+    const gh=(m.actualBoundingBoxAscent+m.actualBoundingBoxDescent)||px*0.9;
+    const sy=(chh*f)/gh, sx=(cw*f)/gw;   // stretch to fill the cell
+    const yOff=(m.actualBoundingBoxAscent-m.actualBoundingBoxDescent)/2;
+    ctx.save();ctx.translate(cx,cy);ctx.scale(sx,sy);
+    ctx.fillText(ch,0,yOff);
+    if(o.weight>0){ctx.lineWidth=o.weight*u*0.2/Math.min(sx,sy);ctx.strokeText(ch,0,yOff)}
+    ctx.restore();
+  };
+  if(o.shape==='square'){
+    const half=size*0.44;
+    ctx.lineWidth=bw;ctx.strokeRect(-half+bw/2,-half+bw/2,half*2-bw,half*2-bw);
+    const inner=(half-bw)*2*0.94;
+    if(n===1){putCell(chars[0],0,0,inner,inner)}
+    else{
+      const cols=2,rows=Math.ceil(n/2);
+      const cw=inner/cols,chh=inner/rows;
+      if(o.lang==='ko'){
+        // 한글: 왼쪽→오른쪽, 위→아래 순서. 마지막 글자(인)는 맨 아래 오른쪽 칸
+        chars.forEach((c,i)=>{
+          let r=Math.floor(i/2),col=i%2;
+          if(i===n-1&&n%2===1){col=1}           // 홀수면 마지막 글자를 오른쪽 아래로
+          putCell(c,col?cw/2:-cw/2,-inner/2+chh*(r+0.5),cw,chh)});
+      }else{
+        // 한자: 전통 인감 순서 — 오른쪽 열부터 위→아래
+        const rightN=Math.min(rows,n),leftN=n-rightN;
+        chars.forEach((c,i)=>{
+          const isRight=i<rightN;const idx=isRight?i:i-rightN;const cnt=isRight?rightN:leftN;
+          putCell(c,isRight?cw/2:-cw/2,-chh*cnt/2+chh*(idx+0.5),cw,chh)});
+      }
+    }
+  }else{ // tall oval
+    const rx=size*0.28,ry=size*0.45;
+    ctx.lineWidth=bw;ctx.beginPath();ctx.ellipse(0,0,rx-bw/2,ry-bw/2,0,0,Math.PI*2);ctx.stroke();
+    const innerH=(ry-bw)*2*0.88,innerW=(rx-bw)*2*0.86;
+    const chh=innerH/n;
+    chars.forEach((c,i)=>{
+      const y=-innerH/2+chh*(i+0.5);
+      // available width narrows towards top/bottom of the ellipse
+      const t=Math.abs(y)/(ry-bw);const w=innerW*Math.sqrt(Math.max(0.35,1-t*t*0.8));
+      putCell(c,0,y,w,chh)});
+  }
+  ctx.restore();
+}
+function renderStamp(){drawStamp($('#s-canvas').getContext('2d'),600,S);const ok=!!S.name;$('#s-dl').disabled=$('#s-copy').disabled=!ok}
+function stampExport(forClip){const px=cmToPx(+$('#s-size').value);const c=document.createElement('canvas');c.width=c.height=px;const o={...S,bg:forClip?$('#s-clipwhite').checked:S.bg};drawStamp(c.getContext('2d'),px,o);return c}
+function buildFontCards(){
+  const list=S.lang==='ko'?KO_FONTS:HJ_FONTS;const box=$('#s-fonts');box.innerHTML='';
+  if(!list.some(f=>f[0]===S.font))S.font=list[0][0];
+  list.forEach(([f,label])=>{const d=document.createElement('div');d.className='fcard'+(f===S.font?' on':'');
+    d.innerHTML=`<canvas width="150" height="150"></canvas><span>${label}</span>`;
+    d.onclick=()=>{document.querySelectorAll('.fcard').forEach(x=>x.classList.remove('on'));d.classList.add('on');S.font=f;renderStamp()};
+    box.appendChild(d)});
+  drawFontCards();
+}
+function drawFontCards(){const list=S.lang==='ko'?KO_FONTS:HJ_FONTS;
+  document.querySelectorAll('#s-fonts canvas').forEach((c,i)=>drawStamp(c.getContext('2d'),150,{...S,font:list[i][0],rot:0,bg:false},true))}
+function refreshStamp(){renderStamp();drawFontCards()}
+
+$('#s-name').oninput=e=>{S.name=e.target.value.trim();refreshStamp()};
+seg($('#s-lang'),v=>{S.lang=v;$('#s-name').placeholder=v==='ko'?'강한성':'姜漢成';$('#s-suffix-char').textContent=v==='ko'?'인':'印';buildFontCards();renderStamp()});
+seg($('#s-shape'),v=>{S.shape=v;$('#s-suffix-row').style.opacity=v==='square'?1:.4;refreshStamp()});
+$('#s-suffix').onchange=e=>{S.suffix=e.target.checked;refreshStamp()};
+swatch($('#s-colors'),'s',c=>{S.color=c;refreshStamp()});
+[['border',''],['weight',''],['fill','%'],['rot','°']].forEach(([k,suf])=>{const el=$('#s-'+k);el.oninput=()=>{S[k]=+el.value;$('#s-'+k+'-v').textContent=el.value+suf;refreshStamp()}});
+$('#s-bg').onchange=e=>{S.bg=e.target.checked;renderStamp()};
+$('#s-dl').onclick=()=>download(stampExport(false),`도장_${stampText(S)}.png`);$('#s-copy').onclick=()=>copyPng(stampExport(true));
+$('#s-reset').onclick=()=>location.reload();
+
+/* =============== SIGNATURE =============== */
+const STYLES=[
+  {n:'클래식 필기체',en:'Great Vibes',ko:'Nanum Pen Script',tilt:-8,under:1,flour:1},
+  {n:'모던 미니멀',en:'Sacramento',ko:'Gaegu',tilt:0,under:0,flour:0},
+  {n:'볼드 스트로크',en:'Pacifico',ko:'Do Hyeon',tilt:-5,under:1,flour:0},
+  {n:'우아한 플러리시',en:'Allura',ko:'Hi Melody',tilt:-12,under:1,flour:1},
+  {n:'빠른 흘림',en:'Mr Dafoe',ko:'East Sea Dokdo',tilt:-15,under:0,flour:1},
+  {n:'손글씨 자연체',en:'Homemade Apple',ko:'Nanum Brush Script',tilt:-3,under:0,flour:0},
+  {n:'파리지앵',en:'Parisienne',ko:'Yeon Sung',tilt:-10,under:1,flour:1},
+  {n:'캐주얼',en:'Caveat',ko:'Gaegu',tilt:2,under:0,flour:0},
+];
+const G={name:'',style:0,color:'#141414',weight:5,tilt:-8,scale:100,under:true,flour:true,bg:false};
+const D={mode:'auto',strokes:[],cur:null,penW:4};
+function drawSig(ctx,W,H,o,styleIdx,opts={}){
+  const st=STYLES[styleIdx];const name=o.name||'Hong Gildong';const placeholder=!o.name;
+  const font=hasKo(name)?st.ko:st.en;const rnd=seedRand(name+styleIdx);
+  const tilt=opts.tilt??o.tilt,under=opts.under??o.under,flour=opts.flour??o.flour,weight=(opts.weight??o.weight)/5.5,scale=opts.scale??o.scale;
+  ctx.clearRect(0,0,W,H);if(o.bg&&!opts.thumb){ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H)}
+  const color=placeholder&&!opts.thumb?'#c4c0b8':o.color;
+  ctx.save();ctx.translate(W/2,H/2);ctx.rotate(tilt*Math.PI/180);
+  let fs=H*0.42*scale/100;ctx.font=`${fs}px "${font}", cursive`;
+  let tw=ctx.measureText(name).width*0.93;if(tw>W*0.78){fs*=W*0.78/tw;ctx.font=`${fs}px "${font}", cursive`;tw=ctx.measureText(name).width*0.93}
+  ctx.fillStyle=color;ctx.strokeStyle=color;ctx.textBaseline='alphabetic';ctx.textAlign='left';ctx.lineCap='round';ctx.lineJoin='round';
+  ctx.shadowColor=color;ctx.shadowBlur=0.6*fs/60;
+  let x=-tw/2;const y=fs*0.28;
+  for(const ch of name){const w=ctx.measureText(ch).width*0.93;const dy=(rnd()-.5)*fs*0.04;
+    ctx.save();ctx.translate(x,y+dy);ctx.scale(0.93,1);ctx.fillText(ch,0,0);if(weight>0){ctx.lineWidth=weight*fs/70;ctx.strokeText(ch,0,0)}ctx.restore();x+=w}
+  ctx.shadowBlur=0;const endX=x,startX=-tw/2;
+  if(under){const uy=y+fs*0.18;let lw=fs/22*(1+weight*0.4);ctx.beginPath();ctx.moveTo(startX-fs*0.1,uy);ctx.quadraticCurveTo((startX+endX)/2,uy+fs*0.12,endX+fs*0.25,uy-fs*0.05);for(let i=0;i<4;i++){ctx.lineWidth=lw*(1-i/4*0.75);ctx.stroke()}}
+  if(flour){ctx.lineWidth=fs/30*(1+weight*0.3);ctx.beginPath();ctx.moveTo(endX,y-fs*0.15);ctx.bezierCurveTo(endX+fs*0.5,y-fs*0.8,endX+fs*0.9,y+fs*0.3,endX+fs*0.15,y+fs*0.25);ctx.bezierCurveTo(endX-fs*0.2,y+fs*0.22,endX+fs*0.1,y-fs*0.05,endX+fs*0.55,y-fs*0.1);ctx.stroke()}
+  ctx.restore();
+}
+function updateBtns(){const ok=D.mode==='draw'?D.strokes.length>0:!!G.name;$('#g-dl').disabled=$('#g-copy').disabled=!ok}
+function renderSig(){drawSig($('#g-canvas').getContext('2d'),800,300,G,G.style);updateBtns()}
+
+/* ---- 직접 그리기 ---- */
+const dCan=$('#d-canvas'),dCtx=dCan.getContext('2d');
+function strokeWidths(st){ // 속도 기반 가변 굵기
+  const ws=[];let prev=st.w;
+  for(let i=0;i<st.pts.length;i++){
+    let w=st.w;
+    if(i>0){const a=st.pts[i-1],b=st.pts[i];const d=Math.hypot(b.x-a.x,b.y-a.y);const dt=Math.max(1,b.t-a.t);
+      const v=d/dt; w=st.w*Math.max(0.35,Math.min(1.45,1.45-v*0.35))}
+    prev=prev+(w-prev)*0.3;ws.push(prev)}
+  return ws}
+function paintStrokes(ctx,scale){
+  ctx.lineCap='round';ctx.lineJoin='round';
+  const all=D.cur?D.strokes.concat([D.cur]):D.strokes;
+  for(const st of all){
+    if(st.pts.length<2){const p=st.pts[0];ctx.fillStyle=st.color;ctx.beginPath();ctx.arc(p.x*scale,p.y*scale,st.w*scale/2,0,7);ctx.fill();continue}
+    const ws=strokeWidths(st);ctx.strokeStyle=st.color;
+    for(let i=1;i<st.pts.length;i++){const a=st.pts[i-1],b=st.pts[i];
+      const mx=(a.x+b.x)/2,my=(a.y+b.y)/2,pm=i>1?{x:(st.pts[i-2].x+a.x)/2,y:(st.pts[i-2].y+a.y)/2}:a;
+      ctx.beginPath();ctx.lineWidth=Math.max(0.5,ws[i]*scale);ctx.moveTo(pm.x*scale,pm.y*scale);ctx.quadraticCurveTo(a.x*scale,a.y*scale,mx*scale,my*scale);ctx.stroke()}}}
+function redrawDraw(){dCtx.clearRect(0,0,800,300);
+  if(!D.strokes.length&&!D.cur){dCtx.save();dCtx.fillStyle='#cfc9bd';dCtx.font='24px "Noto Sans KR"';dCtx.textAlign='center';dCtx.fillText('여기에 서명하세요 ✍',400,158);dCtx.setLineDash([6,6]);dCtx.strokeStyle='#ddd6c8';dCtx.strokeRect(20,20,760,260);dCtx.restore()}
+  paintStrokes(dCtx,1);updateBtns()}
+function dPos(e){const r=dCan.getBoundingClientRect();return{x:(e.clientX-r.left)*800/r.width,y:(e.clientY-r.top)*300/r.height,t:performance.now()}}
+dCan.addEventListener('pointerdown',e=>{e.preventDefault();dCan.setPointerCapture(e.pointerId);D.cur={color:G.color,w:D.penW,pts:[dPos(e)]};redrawDraw()});
+dCan.addEventListener('pointermove',e=>{if(!D.cur)return;const p=dPos(e),last=D.cur.pts[D.cur.pts.length-1];if(Math.hypot(p.x-last.x,p.y-last.y)>1.2){D.cur.pts.push(p);redrawDraw()}});
+const dEnd=()=>{if(!D.cur)return;D.strokes.push(D.cur);D.cur=null;redrawDraw()};
+dCan.addEventListener('pointerup',dEnd);dCan.addEventListener('pointercancel',dEnd);
+$('#d-width').oninput=e=>{D.penW=+e.target.value;$('#d-width-v').textContent=e.target.value};
+$('#d-undo').onclick=()=>{D.strokes.pop();redrawDraw()};
+$('#d-clear').onclick=()=>{D.strokes=[];redrawDraw()};
+function drawExport(forClip){const w=cmToPx(+$('#g-size').value),h=Math.round(w*0.375);const c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d');
+  const bg=forClip?$('#g-clipwhite').checked:G.bg;if(bg){ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h)}
+  paintStrokes(ctx,w/800);return bg?c:trim(c)}
+seg($('#g-mode'),v=>{D.mode=v;
+  document.querySelectorAll('.g-auto').forEach(x=>x.style.display=v==='auto'?'':'none');
+  document.querySelectorAll('.g-draw').forEach(x=>x.style.display=v==='draw'?'':'none');
+  $('#g-canvas').style.display=v==='auto'?'':'none';dCan.style.display=v==='draw'?'':'none';
+  if(v==='draw')redrawDraw();else renderSig();updateBtns()});
+function drawGallery(){document.querySelectorAll('#g-gallery canvas').forEach((c,i)=>drawSig(c.getContext('2d'),300,90,{...G,name:G.name||'Hong Gildong'},i,{thumb:1,tilt:STYLES[i].tilt,under:!!STYLES[i].under,flour:!!STYLES[i].flour,weight:5,scale:100}))}
+STYLES.forEach((s,i)=>{const d=document.createElement('div');d.className='card'+(i===0?' on':'');d.innerHTML=`<canvas width="300" height="90"></canvas><span>${s.n}</span>`;
+  d.onclick=()=>{document.querySelectorAll('.card').forEach(x=>x.classList.remove('on'));d.classList.add('on');G.style=i;G.tilt=s.tilt;G.under=!!s.under;G.flour=!!s.flour;$('#g-tilt').value=s.tilt;$('#g-tilt-v').textContent=s.tilt+'°';$('#g-under').checked=G.under;$('#g-flour').checked=G.flour;renderSig()};
+  $('#g-gallery').appendChild(d)});
+function sigExport(forClip){const w=cmToPx(+$('#g-size').value),h=Math.round(w*0.375);const c=document.createElement('canvas');c.width=w;c.height=h;const o={...G,bg:forClip?$('#g-clipwhite').checked:G.bg};drawSig(c.getContext('2d'),w,h,o,G.style);return o.bg?c:trim(c)}
+$('#g-name').oninput=e=>{G.name=e.target.value.replace(/[^\p{L}\p{N} .'-]/gu,'').trim();renderSig();drawGallery()};
+swatch($('#g-colors'),'g',c=>{G.color=c;renderSig();drawGallery()});
+$('#g-weight').oninput=e=>{G.weight=+e.target.value;$('#g-weight-v').textContent=e.target.value;renderSig()};
+$('#g-tilt').oninput=e=>{G.tilt=+e.target.value;$('#g-tilt-v').textContent=e.target.value+'°';renderSig()};
+$('#g-scale').oninput=e=>{G.scale=+e.target.value;$('#g-scale-v').textContent=e.target.value+'%';renderSig()};
+$('#g-under').onchange=e=>{G.under=e.target.checked;renderSig()};$('#g-flour').onchange=e=>{G.flour=e.target.checked;renderSig()};$('#g-bg').onchange=e=>{G.bg=e.target.checked;renderSig()};
+$('#g-dl').onclick=()=>download(D.mode==='draw'?drawExport(false):sigExport(false),`서명_${D.mode==='draw'?(G.name||'직접그림'):G.name}.png`);$('#g-copy').onclick=()=>copyPng(D.mode==='draw'?drawExport(true):sigExport(true));
+$('#g-reset').onclick=()=>location.reload();
+
+/* ---------- init ---------- */
+buildFontCards();renderStamp();renderSig();drawGallery();
+document.fonts.ready.then(()=>{refreshStamp();renderSig();drawGallery()});
+setTimeout(()=>{refreshStamp();renderSig();drawGallery()},2000);
+</script>
+</body>
+</html>
