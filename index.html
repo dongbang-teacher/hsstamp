@@ -76,6 +76,8 @@
     .board{min-height:320px}.fonts{grid-template-columns:repeat(3,1fr)}
   }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 </head>
 <body>
 <header>
@@ -86,6 +88,7 @@
 <div class="tabwrap"><div class="tabs">
   <button class="tab on" data-tab="stamp">전자도장</button>
   <button class="tab" data-tab="sig">전자서명</button>
+  <button class="tab" data-tab="pdf">PDF 도장 찍기</button>
 </div></div>
 
 <main>
@@ -167,6 +170,25 @@
       <button class="btn sm" id="g-copy" disabled>클립보드 복사</button>
       <button class="btn sm" id="g-reset">초기화</button>
     </div>
+  </div>
+</section>
+<!-- ================= PDF STAMP ================= -->
+<section class="panel" id="panel-pdf">
+  <div class="opts">
+    <div class="field"><span class="lbl">① PDF 파일 업로드</span><input type="file" id="p-file" accept="application/pdf" style="width:100%"></div>
+    <div class="field"><span class="lbl">② 찍을 이미지</span>
+      <div class="seg" id="p-src"><button data-v="stamp" class="on">현재 도장</button><button data-v="sig">현재 서명</button><button data-v="img">내 이미지</button></div>
+      <input type="file" id="p-img" accept="image/png,image/jpeg" style="display:none;width:100%;margin-top:8px">
+    </div>
+    <div class="field"><label>찍는 크기 <span class="val" id="p-size-v">1.5 cm</span></label><input type="range" id="p-size" min="0.8" max="5" step="0.1" value="1.5"></div>
+    <div style="font-size:13px;color:var(--muted);line-height:1.8">③ 오른쪽 문서에서 원하는 자리를 <b>클릭</b>하면 도장이 찍힙니다. 찍힌 도장은 <b>드래그</b>로 옮기고, 선택한 상태에서 크기 슬라이더로 조절합니다. 여러 개 찍을 수 있습니다.</div>
+    <div class="actions"><button class="btn sm" id="p-del">선택 도장 삭제</button><button class="btn sm" id="p-clear">모두 삭제</button></div>
+    <div style="font-size:12px;color:var(--muted)">모든 처리는 브라우저 안에서만 이뤄지며 PDF는 서버로 전송되지 않습니다. 한글 문서는 한글에서 「파일 → PDF로 저장」 후 올려주세요.</div>
+  </div>
+  <div class="preview">
+    <div class="actions"><button class="btn sm" id="p-prev">◀ 이전 페이지</button><span id="p-pageinfo" style="font-weight:700;min-width:60px;text-align:center">- / -</span><button class="btn sm" id="p-next">다음 페이지 ▶</button></div>
+    <div class="board" style="align-items:flex-start;overflow:auto"><canvas id="p-canvas" width="760" height="400" style="cursor:crosshair;background:#fff;max-height:none"></canvas><span class="hint">클릭 = 찍기 · 드래그 = 이동</span></div>
+    <div class="actions"><button class="btn primary" id="p-dl" disabled>도장 찍힌 PDF 다운로드</button></div>
   </div>
 </section>
 </main>
@@ -392,6 +414,74 @@ $('#g-scale').oninput=e=>{G.scale=+e.target.value;$('#g-scale-v').textContent=e.
 $('#g-under').onchange=e=>{G.under=e.target.checked;renderSig()};$('#g-flour').onchange=e=>{G.flour=e.target.checked;renderSig()};$('#g-bg').onchange=e=>{G.bg=e.target.checked;renderSig()};
 $('#g-dl').onclick=()=>download(D.mode==='draw'?drawExport(false):sigExport(false),`서명_${D.mode==='draw'?(G.name||'직접그림'):G.name}.png`);$('#g-copy').onclick=()=>copyPng(D.mode==='draw'?drawExport(true):sigExport(true));
 $('#g-reset').onclick=()=>location.reload();
+
+/* =============== PDF STAMP =============== */
+const CM_PT=72/2.54;
+const P={doc:null,bytes:null,page:1,num:0,bmp:null,scale:1,marks:[],sel:-1,src:'stamp',imgUrl:null,imgType:'png',size:1.5,drag:null};
+const pCan=$('#p-canvas'),pCtx=pCan.getContext('2d');
+if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+$('#p-file').onchange=async e=>{const f=e.target.files[0];if(!f)return;
+  try{P.bytes=new Uint8Array(await f.arrayBuffer());
+    P.doc=await pdfjsLib.getDocument({data:P.bytes.slice()}).promise;
+    P.num=P.doc.numPages;P.page=1;P.marks=[];P.sel=-1;await renderPdfPage();toast(P.num+'페이지를 불러왔습니다')}
+  catch(err){toast('PDF를 열 수 없습니다: '+err.message)}};
+async function renderPdfPage(){if(!P.doc)return;
+  const pg=await P.doc.getPage(P.page);const base=pg.getViewport({scale:1});
+  P.scale=Math.min(820/base.width,2);const vp=pg.getViewport({scale:P.scale});
+  pCan.width=vp.width;pCan.height=vp.height;
+  await pg.render({canvasContext:pCtx,viewport:vp}).promise;
+  P.bmp=await createImageBitmap(pCan);
+  $('#p-pageinfo').textContent=P.page+' / '+P.num;drawPdf()}
+function drawPdf(){if(!P.bmp)return;pCtx.drawImage(P.bmp,0,0);
+  P.marks.forEach((m,i)=>{if(m.page!==P.page)return;
+    const w=m.wCm*CM_PT*P.scale,h=w*m.img.height/m.img.width;
+    pCtx.drawImage(m.img,m.cx*P.scale-w/2,m.cy*P.scale-h/2,w,h);
+    if(i===P.sel){pCtx.save();pCtx.setLineDash([5,4]);pCtx.strokeStyle='#B5121B';pCtx.lineWidth=1.5;
+      pCtx.strokeRect(m.cx*P.scale-w/2-4,m.cy*P.scale-h/2-4,w+8,h+8);pCtx.restore()}});
+  $('#p-dl').disabled=!P.marks.length}
+async function currentStampImg(){
+  let url,type='png';
+  if(P.src==='stamp'){if(!S.name){toast('전자도장 탭에서 이름을 먼저 입력하세요');return null}url=stampExport(false).toDataURL('image/png')}
+  else if(P.src==='sig'){if(D.mode==='auto'&&!G.name){toast('전자서명 탭에서 이름을 먼저 입력하거나 직접 그리세요');return null}
+    if(D.mode==='draw'&&!D.strokes.length){toast('전자서명 탭에서 서명을 먼저 그리세요');return null}
+    url=(D.mode==='draw'?drawExport(false):sigExport(false)).toDataURL('image/png')}
+  else{if(!P.imgUrl){toast('이미지 파일을 먼저 선택하세요');return null}url=P.imgUrl;type=P.imgType}
+  const img=new Image();await new Promise((ok,no)=>{img.onload=ok;img.onerror=no;img.src=url});
+  return{img,url,type}}
+function pdfPos(e){const r=pCan.getBoundingClientRect();return{x:(e.clientX-r.left)*pCan.width/r.width/P.scale,y:(e.clientY-r.top)*pCan.height/r.height/P.scale}}
+function hitMark(pos){for(let i=P.marks.length-1;i>=0;i--){const m=P.marks[i];if(m.page!==P.page)continue;
+  const w=m.wCm*CM_PT,h=w*m.img.height/m.img.width;
+  if(Math.abs(pos.x-m.cx)<w/2+4&&Math.abs(pos.y-m.cy)<h/2+4)return i}return -1}
+pCan.addEventListener('pointerdown',async e=>{if(!P.doc)return;e.preventDefault();pCan.setPointerCapture(e.pointerId);
+  const pos=pdfPos(e);const hit=hitMark(pos);
+  if(hit>=0){P.sel=hit;P.drag={dx:pos.x-P.marks[hit].cx,dy:pos.y-P.marks[hit].cy};drawPdf()}
+  else{const st=await currentStampImg();if(!st)return;
+    P.marks.push({page:P.page,cx:pos.x,cy:pos.y,wCm:P.size,img:st.img,url:st.url,type:st.type});
+    P.sel=P.marks.length-1;P.drag={dx:0,dy:0};drawPdf()}});
+pCan.addEventListener('pointermove',e=>{if(!P.drag||P.sel<0)return;const pos=pdfPos(e);
+  P.marks[P.sel].cx=pos.x-P.drag.dx;P.marks[P.sel].cy=pos.y-P.drag.dy;drawPdf()});
+pCan.addEventListener('pointerup',()=>P.drag=null);pCan.addEventListener('pointercancel',()=>P.drag=null);
+seg($('#p-src'),v=>{P.src=v;$('#p-img').style.display=v==='img'?'':'none'});
+$('#p-img').onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();
+  rd.onload=()=>{P.imgUrl=rd.result;P.imgType=f.type.includes('png')?'png':'jpg';toast('이미지를 불러왔습니다')};rd.readAsDataURL(f)};
+$('#p-size').oninput=e=>{P.size=+e.target.value;$('#p-size-v').textContent=P.size.toFixed(1)+' cm';
+  if(P.sel>=0){P.marks[P.sel].wCm=P.size;drawPdf()}};
+$('#p-prev').onclick=async()=>{if(P.doc&&P.page>1){P.page--;P.sel=-1;await renderPdfPage()}};
+$('#p-next').onclick=async()=>{if(P.doc&&P.page<P.num){P.page++;P.sel=-1;await renderPdfPage()}};
+$('#p-del').onclick=()=>{if(P.sel>=0){P.marks.splice(P.sel,1);P.sel=-1}else P.marks.pop();drawPdf()};
+$('#p-clear').onclick=()=>{P.marks=[];P.sel=-1;drawPdf()};
+$('#p-dl').onclick=async()=>{try{
+  const pdf=await PDFLib.PDFDocument.load(P.bytes);const pages=pdf.getPages();const cache={};
+  for(const m of P.marks){
+    if(!cache[m.url]){const bytes=await fetch(m.url).then(r=>r.arrayBuffer());
+      cache[m.url]=m.type==='png'?await pdf.embedPng(bytes):await pdf.embedJpg(bytes)}
+    const im=cache[m.url];const pg=pages[m.page-1];
+    const wPt=m.wCm*CM_PT,hPt=wPt*im.height/im.width;
+    pg.drawImage(im,{x:m.cx-wPt/2,y:pg.getHeight()-m.cy-hPt/2,width:wPt,height:hPt})}
+  const out=await pdf.save();const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([out],{type:'application/pdf'}));a.download='도장완료.pdf';a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('저장되었습니다')}
+  catch(err){toast('저장 실패: '+err.message)}};
 
 /* ---------- init ---------- */
 buildFontCards();renderStamp();renderSig();drawGallery();
