@@ -99,7 +99,7 @@
       <div class="field"><span class="lbl">문자</span>
         <div class="seg" id="s-lang"><button data-v="ko" class="on">한글</button><button data-v="hanja">한자</button></div></div>
       <div class="field"><span class="lbl">모양</span>
-        <div class="seg" id="s-shape"><button data-v="square" class="on">사각도장</button><button data-v="oval">원형도장</button></div></div>
+        <div class="seg" id="s-shape"><button data-v="square" class="on">사각도장</button><button data-v="circle">원형도장</button><button data-v="oval">타원도장</button></div></div>
     </div>
     <div class="field"><label for="s-name">이름</label><input type="text" id="s-name" placeholder="강한성" maxlength="6" autocomplete="off"></div>
     <label class="toggle" id="s-suffix-row"><span>이름 뒤에 <b id="s-suffix-char">인</b> 자동 추가 (사각도장)</span><input type="checkbox" id="s-suffix" checked></label>
@@ -242,7 +242,8 @@ const S={name:'',lang:'ko',shape:'square',font:'Song Myung',suffix:true,color:'#
 function stampText(o){
   const raw=(o.name||(o.lang==='ko'?'강한성':'姜漢成')).replace(/[^\p{L}\p{N}]/gu,'');
   const suf=o.lang==='ko'?'인':'印';
-  return o.shape==='square'&&o.suffix?raw+suf:raw;
+  const addSuf=(o.shape==='square'||o.shape==='circle')&&o.suffix;
+  return addSuf?raw+suf:raw;
 }
 function drawStamp(ctx,size,o,thumb){
   const text=stampText(o);const chars=[...text];const n=chars.length;
@@ -268,28 +269,32 @@ function drawStamp(ctx,size,o,thumb){
     if(o.weight>0){ctx.lineWidth=o.weight*u*0.2/Math.min(sx,sy);ctx.strokeText(ch,0,yOff)}
     ctx.restore();
   };
+  // 2열 격자 배치 (사각·원형 도장 공용): 한글은 읽기 순서, 한자는 전통 인감 순서
+  const putGrid=(inner)=>{
+    if(n===1){putCell(chars[0],0,0,inner,inner);return}
+    const cols=2,rows=Math.ceil(n/2);
+    const cw=inner/cols,chh=inner/rows;
+    if(o.lang==='ko'){
+      chars.forEach((c,i)=>{
+        let r=Math.floor(i/2),col=i%2;
+        if(i===n-1&&n%2===1){col=1}
+        putCell(c,col?cw/2:-cw/2,-inner/2+chh*(r+0.5),cw,chh)});
+    }else{
+      const rightN=Math.min(rows,n),leftN=n-rightN;
+      chars.forEach((c,i)=>{
+        const isRight=i<rightN;const idx=isRight?i:i-rightN;const cnt=isRight?rightN:leftN;
+        putCell(c,isRight?cw/2:-cw/2,-chh*cnt/2+chh*(idx+0.5),cw,chh)});
+    }
+  };
   if(o.shape==='square'){
     const half=size*0.44;
     ctx.lineWidth=bw;ctx.strokeRect(-half+bw/2,-half+bw/2,half*2-bw,half*2-bw);
-    const inner=(half-bw)*2*0.94;
-    if(n===1){putCell(chars[0],0,0,inner,inner)}
-    else{
-      const cols=2,rows=Math.ceil(n/2);
-      const cw=inner/cols,chh=inner/rows;
-      if(o.lang==='ko'){
-        // 한글: 왼쪽→오른쪽, 위→아래 순서. 마지막 글자(인)는 맨 아래 오른쪽 칸
-        chars.forEach((c,i)=>{
-          let r=Math.floor(i/2),col=i%2;
-          if(i===n-1&&n%2===1){col=1}           // 홀수면 마지막 글자를 오른쪽 아래로
-          putCell(c,col?cw/2:-cw/2,-inner/2+chh*(r+0.5),cw,chh)});
-      }else{
-        // 한자: 전통 인감 순서 — 오른쪽 열부터 위→아래
-        const rightN=Math.min(rows,n),leftN=n-rightN;
-        chars.forEach((c,i)=>{
-          const isRight=i<rightN;const idx=isRight?i:i-rightN;const cnt=isRight?rightN:leftN;
-          putCell(c,isRight?cw/2:-cw/2,-chh*cnt/2+chh*(idx+0.5),cw,chh)});
-      }
-    }
+    putGrid((half-bw)*2*0.94);
+  }else if(o.shape==='circle'){
+    const R=size*0.38;
+    ctx.lineWidth=bw;ctx.beginPath();ctx.ellipse(0,0,R-bw/2,R-bw/2,0,0,Math.PI*2);ctx.stroke();
+    // 원에 내접하는 정사각형 안에 사각도장과 같은 격자로 배치
+    putGrid((R-bw)*Math.SQRT2*0.92);
   }else{ // tall oval
     const rx=size*0.28,ry=size*0.45;
     ctx.lineWidth=bw;ctx.beginPath();ctx.ellipse(0,0,rx-bw/2,ry-bw/2,0,0,Math.PI*2);ctx.stroke();
@@ -297,7 +302,6 @@ function drawStamp(ctx,size,o,thumb){
     const chh=innerH/n;
     chars.forEach((c,i)=>{
       const y=-innerH/2+chh*(i+0.5);
-      // available width narrows towards top/bottom of the ellipse
       const t=Math.abs(y)/(ry-bw);const w=innerW*Math.sqrt(Math.max(0.35,1-t*t*0.8));
       putCell(c,0,y,w,chh)});
   }
@@ -320,7 +324,7 @@ function refreshStamp(){renderStamp();drawFontCards()}
 
 $('#s-name').oninput=e=>{S.name=e.target.value.trim();refreshStamp()};
 seg($('#s-lang'),v=>{S.lang=v;$('#s-name').placeholder=v==='ko'?'강한성':'姜漢成';$('#s-suffix-char').textContent=v==='ko'?'인':'印';buildFontCards();renderStamp()});
-seg($('#s-shape'),v=>{S.shape=v;$('#s-suffix-row').style.opacity=v==='square'?1:.4;refreshStamp()});
+seg($('#s-shape'),v=>{S.shape=v;$('#s-suffix-row').style.opacity=(v==='square'||v==='circle')?1:.4;refreshStamp()});
 $('#s-suffix').onchange=e=>{S.suffix=e.target.checked;refreshStamp()};
 swatch($('#s-colors'),'s',c=>{S.color=c;refreshStamp()});
 [['border',''],['weight',''],['fill','%'],['rot','°']].forEach(([k,suf])=>{const el=$('#s-'+k);el.oninput=()=>{S[k]=+el.value;$('#s-'+k+'-v').textContent=el.value+suf;refreshStamp()}});
@@ -490,3 +494,4 @@ setTimeout(()=>{refreshStamp();renderSig();drawGallery()},2000);
 </script>
 </body>
 </html>
+
