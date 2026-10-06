@@ -89,6 +89,7 @@
   <button class="tab on" data-tab="stamp">전자도장</button>
   <button class="tab" data-tab="sig">전자서명</button>
   <button class="tab" data-tab="pdf">PDF 도장 찍기</button>
+  <button class="tab" data-tab="img">그림 도장 찍기</button>
 </div></div>
 
 <main>
@@ -189,6 +190,29 @@
     <div class="actions"><button class="btn sm" id="p-prev">◀ 이전 페이지</button><span id="p-pageinfo" style="font-weight:700;min-width:60px;text-align:center">- / -</span><button class="btn sm" id="p-next">다음 페이지 ▶</button></div>
     <div class="board" style="align-items:flex-start;overflow:auto"><canvas id="p-canvas" width="760" height="400" style="cursor:crosshair;background:#fff;max-height:none"></canvas><span class="hint">클릭 = 찍기 · 드래그 = 이동</span></div>
     <div class="actions"><button class="btn primary" id="p-dl" disabled>도장 찍힌 PDF 다운로드</button></div>
+  </div>
+</section>
+<!-- ================= IMAGE STAMP ================= -->
+<section class="panel" id="panel-img">
+  <div class="opts">
+    <div class="field"><span class="lbl">① 사진·그림 파일 업로드</span><input type="file" id="q-file" accept="image/png,image/jpeg,image/webp" style="width:100%"></div>
+    <div class="field"><span class="lbl">② 찍을 이미지</span>
+      <div class="seg" id="q-src"><button data-v="stamp" class="on">현재 도장</button><button data-v="sig">현재 서명</button><button data-v="img">내 이미지</button></div>
+      <input type="file" id="q-img" accept="image/png,image/jpeg" style="display:none;width:100%;margin-top:8px">
+    </div>
+    <div class="row">
+      <div class="field"><label>찍는 크기 <span class="val" id="q-size-v">1.5 cm</span></label><input type="range" id="q-size" min="0.8" max="5" step="0.1" value="1.5"></div>
+      <div class="field"><label>원본 해상도(DPI)</label><select id="q-dpi"><option value="72">72 (웹용)</option><option value="96">96</option><option value="150">150</option><option value="300" selected>300 (스캔 기본)</option></select></div>
+    </div>
+    <div style="font-size:12px;color:var(--muted)">사진·스캔 파일은 실제 인쇄 크기 정보가 없어서, 가정 해상도로 cm를 환산합니다. 실제 서류를 스캔했다면 보통 300이 맞습니다.</div>
+    <div style="font-size:13px;color:var(--muted);line-height:1.8">③ 오른쪽 그림에서 원하는 자리를 <b>클릭</b>하면 도장이 찍힙니다. 찍힌 도장은 <b>드래그</b>로 옮기고, 선택한 상태에서 크기 슬라이더로 조절합니다.</div>
+    <div class="actions"><button class="btn sm" id="q-del">선택 도장 삭제</button><button class="btn sm" id="q-clear">모두 삭제</button></div>
+    <div class="field"><label>저장 형식</label><div class="seg" id="q-out"><button data-v="png" class="on">PNG</button><button data-v="jpg">JPG</button></div></div>
+    <div style="font-size:12px;color:var(--muted)">모든 처리는 브라우저 안에서만 이뤄지며 사진은 서버로 전송되지 않습니다.</div>
+  </div>
+  <div class="preview">
+    <div class="board" style="align-items:flex-start;overflow:auto"><canvas id="q-canvas" width="760" height="400" style="cursor:crosshair;background:#fff;max-height:none"></canvas><span class="hint">클릭 = 찍기 · 드래그 = 이동</span></div>
+    <div class="actions"><button class="btn primary" id="q-dl" disabled>도장 찍힌 사진 다운로드</button></div>
   </div>
 </section>
 </main>
@@ -443,15 +467,16 @@ function drawPdf(){if(!P.bmp)return;pCtx.drawImage(P.bmp,0,0);
     if(i===P.sel){pCtx.save();pCtx.setLineDash([5,4]);pCtx.strokeStyle='#B5121B';pCtx.lineWidth=1.5;
       pCtx.strokeRect(m.cx*P.scale-w/2-4,m.cy*P.scale-h/2-4,w+8,h+8);pCtx.restore()}});
   $('#p-dl').disabled=!P.marks.length}
-async function currentStampImg(){
+async function pickStampSource(srcMode,customUrl,customType){
   let url,type='png';
-  if(P.src==='stamp'){if(!S.name){toast('전자도장 탭에서 이름을 먼저 입력하세요');return null}url=stampExport(false).toDataURL('image/png')}
-  else if(P.src==='sig'){if(D.mode==='auto'&&!G.name){toast('전자서명 탭에서 이름을 먼저 입력하거나 직접 그리세요');return null}
+  if(srcMode==='stamp'){if(!S.name){toast('전자도장 탭에서 이름을 먼저 입력하세요');return null}url=stampExport(false).toDataURL('image/png')}
+  else if(srcMode==='sig'){if(D.mode==='auto'&&!G.name){toast('전자서명 탭에서 이름을 먼저 입력하거나 직접 그리세요');return null}
     if(D.mode==='draw'&&!D.strokes.length){toast('전자서명 탭에서 서명을 먼저 그리세요');return null}
     url=(D.mode==='draw'?drawExport(false):sigExport(false)).toDataURL('image/png')}
-  else{if(!P.imgUrl){toast('이미지 파일을 먼저 선택하세요');return null}url=P.imgUrl;type=P.imgType}
+  else{if(!customUrl){toast('이미지 파일을 먼저 선택하세요');return null}url=customUrl;type=customType}
   const img=new Image();await new Promise((ok,no)=>{img.onload=ok;img.onerror=no;img.src=url});
   return{img,url,type}}
+async function currentStampImg(){return pickStampSource(P.src,P.imgUrl,P.imgType)}
 function pdfPos(e){const r=pCan.getBoundingClientRect();return{x:(e.clientX-r.left)*pCan.width/r.width/P.scale,y:(e.clientY-r.top)*pCan.height/r.height/P.scale}}
 function hitMark(pos){for(let i=P.marks.length-1;i>=0;i--){const m=P.marks[i];if(m.page!==P.page)continue;
   const w=m.wCm*CM_PT,h=w*m.img.height/m.img.width;
@@ -487,6 +512,52 @@ $('#p-dl').onclick=async()=>{try{
   setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('저장되었습니다')}
   catch(err){toast('저장 실패: '+err.message)}};
 
+/* =============== IMAGE STAMP =============== */
+const Q={img:null,natW:0,natH:0,scale:1,marks:[],sel:-1,src:'stamp',imgUrl:null,imgType:'png',size:1.5,dpi:300,outType:'png',drag:null};
+const qCan=$('#q-canvas'),qCtx=qCan.getContext('2d');
+$('#q-file').onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();
+  rd.onload=()=>{const img=new Image();img.onload=()=>{
+    Q.img=img;Q.natW=img.naturalWidth;Q.natH=img.naturalHeight;Q.marks=[];Q.sel=-1;
+    Q.scale=Math.min(820/Q.natW,900/Q.natH,1);
+    qCan.width=Math.round(Q.natW*Q.scale);qCan.height=Math.round(Q.natH*Q.scale);
+    drawImgTab();toast('사진을 불러왔습니다')};img.src=rd.result};rd.readAsDataURL(f)};
+function qCmToPx(cm){return cm/2.54*Q.dpi}
+function drawImgTab(){if(!Q.img)return;qCtx.clearRect(0,0,qCan.width,qCan.height);qCtx.drawImage(Q.img,0,0,qCan.width,qCan.height);
+  Q.marks.forEach((m,i)=>{const w=qCmToPx(m.wCm)*Q.scale,h=w*m.img.height/m.img.width;
+    qCtx.drawImage(m.img,m.cx*Q.scale-w/2,m.cy*Q.scale-h/2,w,h);
+    if(i===Q.sel){qCtx.save();qCtx.setLineDash([5,4]);qCtx.strokeStyle='#B5121B';qCtx.lineWidth=1.5;
+      qCtx.strokeRect(m.cx*Q.scale-w/2-4,m.cy*Q.scale-h/2-4,w+8,h+8);qCtx.restore()}});
+  $('#q-dl').disabled=!Q.marks.length}
+function qPos(e){const r=qCan.getBoundingClientRect();return{x:(e.clientX-r.left)*qCan.width/r.width/Q.scale,y:(e.clientY-r.top)*qCan.height/r.height/Q.scale}}
+function qHitMark(pos){for(let i=Q.marks.length-1;i>=0;i--){const m=Q.marks[i];const w=qCmToPx(m.wCm),h=w*m.img.height/m.img.width;
+  if(Math.abs(pos.x-m.cx)<w/2+4&&Math.abs(pos.y-m.cy)<h/2+4)return i}return -1}
+qCan.addEventListener('pointerdown',async e=>{if(!Q.img)return;e.preventDefault();qCan.setPointerCapture(e.pointerId);
+  const pos=qPos(e);const hit=qHitMark(pos);
+  if(hit>=0){Q.sel=hit;Q.drag={dx:pos.x-Q.marks[hit].cx,dy:pos.y-Q.marks[hit].cy};drawImgTab()}
+  else{const st=await pickStampSource(Q.src,Q.imgUrl,Q.imgType);if(!st)return;
+    Q.marks.push({cx:pos.x,cy:pos.y,wCm:Q.size,img:st.img});
+    Q.sel=Q.marks.length-1;Q.drag={dx:0,dy:0};drawImgTab()}});
+qCan.addEventListener('pointermove',e=>{if(!Q.drag||Q.sel<0)return;const pos=qPos(e);
+  Q.marks[Q.sel].cx=pos.x-Q.drag.dx;Q.marks[Q.sel].cy=pos.y-Q.drag.dy;drawImgTab()});
+qCan.addEventListener('pointerup',()=>Q.drag=null);qCan.addEventListener('pointercancel',()=>Q.drag=null);
+seg($('#q-src'),v=>{Q.src=v;$('#q-img').style.display=v==='img'?'':'none'});
+seg($('#q-out'),v=>{Q.outType=v});
+$('#q-img').onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();
+  rd.onload=()=>{Q.imgUrl=rd.result;Q.imgType=f.type.includes('png')?'png':'jpg';toast('이미지를 불러왔습니다')};rd.readAsDataURL(f)};
+$('#q-size').oninput=e=>{Q.size=+e.target.value;$('#q-size-v').textContent=Q.size.toFixed(1)+' cm';
+  if(Q.sel>=0){Q.marks[Q.sel].wCm=Q.size;drawImgTab()}};
+$('#q-dpi').onchange=e=>{Q.dpi=+e.target.value;drawImgTab()};
+$('#q-del').onclick=()=>{if(Q.sel>=0){Q.marks.splice(Q.sel,1);Q.sel=-1}else Q.marks.pop();drawImgTab()};
+$('#q-clear').onclick=()=>{Q.marks=[];Q.sel=-1;drawImgTab()};
+$('#q-dl').onclick=()=>{try{
+  const c=document.createElement('canvas');c.width=Q.natW;c.height=Q.natH;const ctx=c.getContext('2d');
+  ctx.drawImage(Q.img,0,0,Q.natW,Q.natH);
+  Q.marks.forEach(m=>{const w=qCmToPx(m.wCm),h=w*m.img.height/m.img.width;
+    ctx.drawImage(m.img,m.cx-w/2,m.cy-h/2,w,h)});
+  const mime=Q.outType==='jpg'?'image/jpeg':'image/png';
+  const a=document.createElement('a');a.href=c.toDataURL(mime,0.95);a.download='도장완료.'+(Q.outType==='jpg'?'jpg':'png');a.click();
+  toast('저장되었습니다')}catch(err){toast('저장 실패: '+err.message)}};
+
 /* ---------- init ---------- */
 buildFontCards();renderStamp();renderSig();drawGallery();
 document.fonts.ready.then(()=>{refreshStamp();renderSig();drawGallery()});
@@ -494,4 +565,3 @@ setTimeout(()=>{refreshStamp();renderSig();drawGallery()},2000);
 </script>
 </body>
 </html>
- 
